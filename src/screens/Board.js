@@ -34,17 +34,17 @@ class Board extends Component {
         this.state = {
             discs: [
                 {
-                    position: new Animated.ValueXY()
+                    position: new Animated.ValueXY({x: DISC_START_POSITION_X + 20, y: DISC_START_POSITION_Y}),
                 },
                 {
-                    position: new Animated.ValueXY({x: DISC_START_POSITION_X + 50, y: DISC_START_POSITION_Y + 50})
+                    position: new Animated.ValueXY({x: DISC_START_POSITION_X + 50, y: DISC_START_POSITION_Y}),
                 },
             ]
             ,
             board: {
-                zoom: 5,
-                x: 0,
-                y: 0,
+                scale: 9,
+                offsetX: 0,
+                offsetY: 0,
             }
         };
     }
@@ -63,40 +63,61 @@ class Board extends Component {
         this.setState({zoom});
     };
 
+    handleOnAddDiscClicked = () => {
+        let newDiscs = this.state.discs;
+        newDiscs.push({position: new Animated.ValueXY({x:DISC_START_POSITION_X,y:DISC_START_POSITION_Y})});
+        this.setState({ discs: newDiscs });
+    };
+
     // disc interactions
     handleDiscTouched = (key) => {
-        console.log('touched',key);
-        this.state.discs[key].position.setOffset({
-            x: this.state.discs[key].position.x._value,
-            y: this.state.discs[key].position.y._value
-        });
-        // we also reset the current value to 0, so we can freshly start the new tracking
-        this.state.discs[key].position.setValue({x: 0, y: 0});
+        // TODO is this needed?
+        // console.log('touched',key);
+        // this.state.discs[key].position.setOffset({
+        //     x: this.state.discs[key].position.x._value,
+        //     y: this.state.discs[key].position.y._value
+        // });
+        // // we also reset the current value to 0, so we can freshly start the new tracking
+        // this.state.discs[key].position.setValue({x: 0, y: 0});
     };
 
     handleDiscMoved = (key, gesture) => {
         console.log('animating', this.state.discs[key].position);
         console.log('gesture', gesture);
-
-        let x = this.state.discs[key].position.x._value + gesture.dx;
-        let y = this.state.discs[key].position.y._value + gesture.dy;
-
-        console.log();
-
         let newDiscs = this.state.discs;
+
         newDiscs[key].position = new Animated.ValueXY({x: gesture.moveX, y: gesture.moveY});
+        newDiscs[key].position.setOffset({
+            x: this.state.board.offsetX * this.state.board.scale,
+            y: this.state.board.offsetY * this.state.board.scale
+        });
+
         this.setState({ discs: newDiscs });
     };
 
     handleDiscReleased = (key) => {
         console.log('released',key);
-        this.state.discs[key].position.flattenOffset();
+        console.log('boardState',this.state.board);
     };
 
     // board interactions
     handleOnBoardMove = (moveObject) => {
-        // TODO shift disc positions and scale it
-        console.log(moveObject);
+        // iterating through all the discs
+        let newDiscs = this.state.discs;
+        this.state.discs.map((singleDisc) => {
+            singleDisc.position.setOffset({
+                x: moveObject.positionX * moveObject.scale,
+                y: moveObject.positionY * moveObject.scale
+            });
+        });
+
+        console.log('moveObject', moveObject);
+        let newBoard = this.state.board;
+        newBoard.scale = moveObject.scale;
+        newBoard.offsetX = moveObject.positionX;
+        newBoard.offsetY = moveObject.positionY;
+
+        this.setState({ discs: newDiscs, board: newBoard });
     };
 
     // simple render functions
@@ -122,7 +143,6 @@ class Board extends Component {
     // main render
 
     render() {
-        console.log('render state',this.state);
         return (
             <View style={{flex: 1}}>
                 <View style={{flexDirection: 'row'}}>
@@ -145,7 +165,8 @@ class Board extends Component {
 
                     <View style={[styles.buttonContainer, {width: 100}]}>
                         <ButtonWithBackground
-                            color="#29aaf4">
+                            color="#29aaf4"
+                            onPress={() => this.handleOnAddDiscClicked()}>
                             Add disc
                         </ButtonWithBackground>
                     </View>
@@ -157,9 +178,9 @@ class Board extends Component {
                            maxOverflow={300}
                            onMove={(moveObject) => this.handleOnBoardMove(moveObject)}
                            centerOn={{
-                               x: this.state.board.x,
-                               y: this.state.board.y,
-                               scale: this.state.board.zoom,
+                               x: this.state.board.offsetX,
+                               y: this.state.board.offsetY,
+                               scale: this.state.board.scale,
                                duration: 0
                            }}>
                     <Image style={{flex: 1}}

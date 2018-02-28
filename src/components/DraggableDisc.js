@@ -39,7 +39,7 @@ class DraggableDisc extends Component {
     }
 
     render() {
-        console.log("disc", this.props);
+        // console.log("disc getLayout", this.props.position.getLayout());
         return (
             <Animated.View
                 {...this.panResponder.panHandlers}

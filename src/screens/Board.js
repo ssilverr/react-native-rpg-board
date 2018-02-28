@@ -15,27 +15,28 @@ import DraggableDisc from "../components/DraggableDisc";
 import ImageZoom from 'react-native-image-pan-zoom';
 
 import ButtonWithBackground from "../common/ButtonWithBackground";
+import {
+    DISC_RADIUS, DISC_START_POSITION_X, DISC_START_POSITION_Y, MAX_ZOOM_AMOUNT, MIN_ZOOM_AMOUNT,
+    ZOOM_AMOUNT
+} from "../Defines";
 
-let CIRCLE_RADIUS = 5;
 let Window = Dimensions.get("window");
-let ZOOM_AMOUNT = 1;
-let MIN_ZOOM_AMOUNT = 1;
-let MAX_ZOOM_AMOUNT = 10;
-const DISC_START_POSITION_X = 250;
-const DISC_START_POSITION_Y = 250;
 
 class Board extends Component {
+
+    // constructor
+
     constructor(props) {
         super(props);
+
+        // init state
 
         this.state = {
             discs: [
                 {
-                    key: "0",
-                    position: new Animated.ValueXY({x: DISC_START_POSITION_X, y: DISC_START_POSITION_Y})
+                    position: new Animated.ValueXY()
                 },
                 {
-                    key: "1",
                     position: new Animated.ValueXY({x: DISC_START_POSITION_X + 50, y: DISC_START_POSITION_Y + 50})
                 },
             ]
@@ -46,49 +47,10 @@ class Board extends Component {
                 y: 0,
             }
         };
-
-        this.panResponder = PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            // onGrant we set the Animated.ValueXYs offset as the previous value
-            onPanResponderGrant: (e, gesture) => {
-                this.state.position.setOffset({
-                    x: this.state.discs[0].position.x._value,
-                    y: this.state.discs[0].position.y._value
-                });
-                // we also reset the current value to 0, so we can freshly start the new tracking
-                this.state.discs[0].position.setValue({x: 0, y: 0});
-            },
-
-            // onMove, we move the Animated.ValueXY, so it follows the touch.
-            onPanResponderMove: Animated.event([
-                null,
-                {
-                    dx: this.state.discs[0].position.x,
-                    dy: this.state.discs[0].position.y
-                }
-            ]),
-
-            // onRelease
-            onPanResponderRelease: (e, gesture) => {
-                this.state.discs[0].position.flattenOffset();
-            }
-        });
     }
 
-    calculateZoom = modifiedZoom => {
-        console.log(modifiedZoom);
-        if (modifiedZoom < MIN_ZOOM_AMOUNT) {
-            console.log("returned MIN AMOUNT");
-            return MIN_ZOOM_AMOUNT;
-        } else if (modifiedZoom > MAX_ZOOM_AMOUNT) {
-            console.log("returned MAX");
-            return MAX_ZOOM_AMOUNT;
-        } else {
-            console.log("returned: ", modifiedZoom);
-            return modifiedZoom;
-        }
-    };
-
+    // handle interactions
+    // button clicks
     handleOnZoomInClicked = () => {
         let zoom = this.state.board.zoom + ZOOM_AMOUNT;
         zoom = this.calculateZoom(zoom);
@@ -101,23 +63,66 @@ class Board extends Component {
         this.setState({zoom});
     };
 
+    // disc interactions
+    handleDiscTouched = (key) => {
+        console.log('touched',key);
+        this.state.discs[key].position.setOffset({
+            x: this.state.discs[key].position.x._value,
+            y: this.state.discs[key].position.y._value
+        });
+        // we also reset the current value to 0, so we can freshly start the new tracking
+        this.state.discs[key].position.setValue({x: 0, y: 0});
+    };
+
+    handleDiscMoved = (key, gesture) => {
+        console.log('animating', this.state.discs[key].position);
+        console.log('gesture', gesture);
+
+        let x = this.state.discs[key].position.x._value + gesture.dx;
+        let y = this.state.discs[key].position.y._value + gesture.dy;
+
+        console.log();
+
+        let newDiscs = this.state.discs;
+        newDiscs[key].position = new Animated.ValueXY({x: gesture.moveX, y: gesture.moveY});
+        this.setState({ discs: newDiscs });
+    };
+
+    handleDiscReleased = (key) => {
+        console.log('released',key);
+        this.state.discs[key].position.flattenOffset();
+    };
+
+    // board interactions
     handleOnBoardMove = (moveObject) => {
+        // TODO shift disc positions and scale it
         console.log(moveObject);
     };
 
+    // simple render functions
+
     renderDiscs = () => {
-        return this.state.discs.map(singleDisc =>
-            <Animated.View
-                {...this.panResponder.panHandlers}
-                style={[singleDisc.position.getLayout(), styles.circle, {
-                    width: CIRCLE_RADIUS * 2 * (this.state.board.zoom),
-                    height: CIRCLE_RADIUS * 2 * (this.state.board.zoom)
-                }]}
-            />
+
+        // Objectkénet tárolom az adatot, de így végig lehet rajta menni Arrayként
+        // Object.values(this.state.discs).map()
+
+        return this.state.discs.map((singleDisc, index ) =>
+            <DraggableDisc
+                discIndex={index}
+                position={singleDisc.position}
+                onTouched={(key) => {
+                    this.handleDiscTouched(key);
+                    console.log('singledisc',singleDisc);
+                }}
+                onPositionChanged={ (key, gesture) => this.handleDiscMoved(key, gesture)}
+                onReleased={(key) => this.handleDiscReleased(key)}/>
         )
     };
 
+    // main render
+
     render() {
+        console.log('render state',this.state);
         return (
             <View style={{flex: 1}}>
                 <View style={{flexDirection: 'row'}}>
@@ -165,7 +170,25 @@ class Board extends Component {
             </View>
         );
     }
+
+    // local functions
+
+    calculateZoom = modifiedZoom => {
+        console.log(modifiedZoom);
+        if (modifiedZoom < MIN_ZOOM_AMOUNT) {
+            console.log("returned MIN AMOUNT");
+            return MIN_ZOOM_AMOUNT;
+        } else if (modifiedZoom > MAX_ZOOM_AMOUNT) {
+            console.log("returned MAX");
+            return MAX_ZOOM_AMOUNT;
+        } else {
+            console.log("returned: ", modifiedZoom);
+            return modifiedZoom;
+        }
+    };
 }
+
+// styling
 
 let styles = StyleSheet.create({
     mainContainer: {
@@ -173,21 +196,9 @@ let styles = StyleSheet.create({
         borderColor: "red",
         borderWidth: 3
     },
-    draggableContainer: {
-        position: "absolute",
-        top: Window.height / 2 - CIRCLE_RADIUS,
-        left: Window.width / 2 - CIRCLE_RADIUS
-    },
     buttonContainer: {
         width: 50,
         height: 50
-    },
-    circle: {
-        position: "absolute",
-        backgroundColor: "#1abc9c",
-        width: CIRCLE_RADIUS,
-        height: CIRCLE_RADIUS,
-        borderRadius: CIRCLE_RADIUS
     }
 });
 

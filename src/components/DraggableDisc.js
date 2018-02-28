@@ -55,15 +55,9 @@ const styles = StyleSheet.create({
         backgroundColor: "#1abc9c",
         width: DISC_RADIUS,
         height: DISC_RADIUS,
-        borderRadius: DISC_RADIUS
-    },
-    draggableContainer: {
-        position: "absolute",
-        top: Window.height / 2 - DISC_RADIUS,
-        left: Window.width / 2 - DISC_RADIUS,
-        borderWidth: 3,
-        borderColor: 'red'
-    },
+        borderRadius: DISC_RADIUS,
+        borderColor: 'black'
+    }
 });
 
 export default DraggableDisc;

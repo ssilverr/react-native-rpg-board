@@ -43,8 +43,8 @@ class Board extends Component {
             ,
             board: {
                 scale: 9,
-                offsetX: 0,
-                offsetY: 0,
+                offsetX: 0,         // when used in calculations, this should be multiplied by the "board.scale"
+                offsetY: 0,         // when used in calculations, this should be multiplied by the "board.scale"
             }
         };
     }
@@ -86,7 +86,7 @@ class Board extends Component {
         console.log('gesture', gesture);
         let newDiscs = this.state.discs;
 
-        newDiscs[key].position = new Animated.ValueXY({x: gesture.moveX, y: gesture.moveY});
+        newDiscs[key].position = new Animated.ValueXY({x: gesture.moveX - this.state.board.offsetX * this.state.board.scale, y: gesture.moveY - this.state.board.offsetY * this.state.board.scale});
         newDiscs[key].position.setOffset({
             x: this.state.board.offsetX * this.state.board.scale,
             y: this.state.board.offsetY * this.state.board.scale
